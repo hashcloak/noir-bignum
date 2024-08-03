@@ -4,6 +4,7 @@ use crate::runtime_bignum::BigNumInstance;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::utils::u60_representation::U60Repr;
 use crate::utils::arrayX::ArrayX;
+use crate::utils::mul::schoolbook_mult;
 
 // a / b = c
 
@@ -14,6 +15,9 @@ impl RuntimeBigNumParamsTrait<5> for U512Params {
         513
     }
     fn has_multiplicative_inverse() -> bool { false }
+    fn mult(a: [Field; 5], b: [Field; 5]) -> ArrayX<Field, 5, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 impl BigNumParamsTrait<5> for U512Params {
     fn get_instance() -> BigNumInstance<5, Self> {
@@ -23,6 +27,9 @@ impl BigNumParamsTrait<5> for U512Params {
         513
     }
     fn has_multiplicative_inverse() -> bool { false }
+    fn mult(a: [Field; 5], b: [Field; 5]) -> ArrayX<Field, 5, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 global U512_Instance: BigNumInstance<5, U512Params> = BigNumInstance {
         modulus: [

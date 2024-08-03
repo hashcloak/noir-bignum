@@ -2,6 +2,7 @@ use dep::std;
 use crate::utils::u60_representation::U60Repr;
 use crate::utils::arrayX::ArrayX;
 use crate::utils::split_bits;
+use crate::utils::mul;
 use crate::BigNum;
 
 /**
@@ -89,6 +90,11 @@ trait BigNumParamsTrait<let N: u32> {
     fn modulus_bits() -> u32;
 
     fn has_multiplicative_inverse() -> bool { true }
+
+    /**
+     * @brief efficient multiplication of 2 N-length arrays. To use in constrained fn
+     **/
+    fn mult(a: [Field; N], b: [Field; N]) -> ArrayX<Field, N, 2> ;
 }
 
 struct BigNumInstance<let N: u32, Params> {
@@ -471,23 +477,42 @@ impl<let N: u32, Params,> BigNumInstanceTrait<BigNum<N, Params>> for BigNumInsta
 
         // Compute the product t0 * t1 + t2 * t3 + t4 - Quotient * Modulus
         // TODO: this is super nasty as it requires a multiplication
+
+        // Products
+        for k in 0..NUM_PRODUCTS {
+          // This does the most efficient multiplication based on array length N
+          let mult_res = Params::mult(t0[k], t1[k]);
+          for i in 0..N+N-1 {
+            product_limbs.add_assign(i, mult_res.get(i));
+          }
+        }
+
+        let product_q_p = Params::mult(quotient.limbs, self.modulus);
+        for i in 0..N+N-1 {
+            product_limbs.sub_assign(i, product_q_p.get(i));
+        }
+
         for i in 0..N {
-            for j in 0..N {
-                for k in 0..NUM_PRODUCTS {
-                    if k == 0 {
-                        let new_term = t0[k][i] * t1[k][j] - quotient.limbs[i] * self.modulus[j];
-                        std::as_witness(new_term); // width-4 optimization (n.b. might not be optimal if t2, t3 input arrays are nonzero)
-                        product_limbs.add_assign(i + j, new_term);
-                    } else {
-                        product_limbs.add_assign(i + j, t0[k][i] * t1[k][j]);
-                    }
-                }
-                if (NUM_PRODUCTS == 0) {
-                    product_limbs.sub_assign(i + j, quotient.limbs[i] * self.modulus[j]);
-                }
-            }
             product_limbs.add_assign(i, t4[i]);
         }
+        // // TODO HC: compare with Karatsuba
+        // for i in 0..N {
+        //     for j in 0..N {
+        //         for k in 0..NUM_PRODUCTS {
+        //             if k == 0 {
+        //                 let new_term = t0[k][i] * t1[k][j] - quotient.limbs[i] * self.modulus[j];
+        //                 std::as_witness(new_term); // width-4 optimization (n.b. might not be optimal if t2, t3 input arrays are nonzero)
+        //                 product_limbs.add_assign(i + j, new_term);
+        //             } else {
+        //                 product_limbs.add_assign(i + j, t0[k][i] * t1[k][j]);
+        //             }
+        //         }
+        //         if (NUM_PRODUCTS == 0) {
+        //             product_limbs.sub_assign(i + j, quotient.limbs[i] * self.modulus[j]);
+        //         }
+        //     }
+        //     product_limbs.add_assign(i, t4[i]);
+        // }
 
         // each limb product represents the sum of 120-bit products.
         // by setting the borrow value to 2^246 we are restricting this method's completeness to expressions

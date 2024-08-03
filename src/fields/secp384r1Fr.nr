@@ -4,11 +4,15 @@ use crate::runtime_bignum::BigNumInstance;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::utils::u60_representation::U60Repr;
 use crate::utils::arrayX::ArrayX;
+use crate::utils::mul::schoolbook_mult;
 
 struct Secp384r1_Fr_Params {}
 impl RuntimeBigNumParamsTrait<4> for Secp384r1_Fr_Params {
     fn modulus_bits() -> u32 {
         384
+    }
+    fn mult(a: [Field; 4], b: [Field; 4]) -> ArrayX<Field, 4, 2> {
+      schoolbook_mult(a, b)
     }
 }
 impl BigNumParamsTrait<4> for Secp384r1_Fr_Params {
@@ -17,6 +21,9 @@ impl BigNumParamsTrait<4> for Secp384r1_Fr_Params {
     }
     fn modulus_bits() -> u32 {
         384
+    }
+    fn mult(a: [Field; 4], b: [Field; 4]) -> ArrayX<Field, 4, 2> {
+      schoolbook_mult(a, b)
     }
 }
 global Secp384r1_Fr_Instance: BigNumInstance<4, Secp384r1_Fr_Params> = BigNumInstance {

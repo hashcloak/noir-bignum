@@ -20,11 +20,15 @@ use crate::runtime_bignum::BigNumInstance;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::utils::u60_representation::U60Repr;
 use crate::utils::arrayX::ArrayX;
+use crate::utils::mul::schoolbook_mult;
 
 struct Vesta_Fr_Params {}
 impl RuntimeBigNumParamsTrait<3> for Vesta_Fr_Params {
     fn modulus_bits() -> u32 {
         255
+    }
+    fn mult(a: [Field; 3], b: [Field; 3]) -> ArrayX<Field, 3, 2> {
+      schoolbook_mult(a, b)
     }
 }
 impl BigNumParamsTrait<3> for Vesta_Fr_Params {
@@ -33,6 +37,9 @@ impl BigNumParamsTrait<3> for Vesta_Fr_Params {
     }
     fn modulus_bits() -> u32 {
         255
+    }
+    fn mult(a: [Field; 3], b: [Field; 3]) -> ArrayX<Field, 3, 2> {
+      schoolbook_mult(a, b)
     }
 }
 global Vesta_Fr_Instance: BigNumInstance<3, Vesta_Fr_Params> = BigNumInstance {

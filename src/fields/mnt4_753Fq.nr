@@ -25,11 +25,15 @@ use crate::runtime_bignum::BigNumInstance;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::utils::u60_representation::U60Repr;
 use crate::utils::arrayX::ArrayX;
+use crate::utils::mul::schoolbook_mult;
 
 struct MNT4_753_Fq_Params {}
 impl RuntimeBigNumParamsTrait<7> for MNT4_753_Fq_Params {
     fn modulus_bits() -> u32 {
         753
+    }
+    fn mult(a: [Field; 7], b: [Field; 7]) -> ArrayX<Field, 7, 2> {
+      schoolbook_mult(a, b)
     }
 }
 impl BigNumParamsTrait<7> for MNT4_753_Fq_Params {
@@ -38,6 +42,9 @@ impl BigNumParamsTrait<7> for MNT4_753_Fq_Params {
     }
     fn modulus_bits() -> u32 {
         753
+    }
+    fn mult(a: [Field; 7], b: [Field; 7]) -> ArrayX<Field, 7, 2> {
+      schoolbook_mult(a, b)
     }
 }
 global MNT4_753_Fq_Instance: BigNumInstance<7, MNT4_753_Fq_Params> = BigNumInstance {

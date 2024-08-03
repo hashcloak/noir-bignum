@@ -1,4 +1,3 @@
-use crate::utils::arrayX::ArrayX;
 use crate::BigNum;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::BigNumParamsTrait as BigNumParamsTrait;
@@ -9,11 +8,16 @@ use crate::fields::U256::U256Params;
 
 use crate::runtime_bignum::BigNumInstance;
 use crate::BigNumTrait;
+use crate::utils::arrayX::ArrayX;
+use crate::utils::mul::schoolbook_mult;
 
 struct Test2048Params{}
 impl RuntimeBigNumParamsTrait<18> for Test2048Params {
     fn modulus_bits() -> u32 {
         2048
+    }
+    fn mult(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2> {
+      schoolbook_mult(a, b)
     }
 }
 impl BigNumParamsTrait<18> for Test2048Params {
@@ -82,6 +86,9 @@ impl BigNumParamsTrait<18> for Test2048Params {
     }
     fn modulus_bits() -> u32 {
         2048
+    }
+    fn mult(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2> {
+      schoolbook_mult(a, b)
     }
 }
 

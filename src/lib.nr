@@ -6,12 +6,14 @@ mod runtime_bignum_test;
 
 use dep::std;
 use crate::utils::u60_representation::U60Repr;
-use crate::utils::arrayX::ArrayX;
 use crate::utils::split_bits;
+use crate::utils::mul;
 use crate::runtime_bignum::BigNumInstance as RuntimeBigNumInstance;
 use crate::runtime_bignum::BigNumInstanceTrait as RuntimeBigNumInstanceTrait;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::runtime_bignum::BigNumTrait as RuntimeBigNumTrait;
+use crate::utils::arrayX::ArrayX;
+
 struct BigNum<let N: u32, Params> {
     limbs: [Field; N]
 }
@@ -32,6 +34,11 @@ trait BigNumParamsTrait<let N: u32> where Self: RuntimeBigNumParamsTrait<N> {
     fn modulus_bits() -> u32;
 
     fn has_multiplicative_inverse() -> bool { true }
+
+    /**
+     * @brief efficient multiplication of 2 N-length arrays. To use in constrained fn
+     **/
+    fn mult(a: [Field; N], b: [Field; N]) -> ArrayX<Field, N, 2>;
 }
 
 trait BigNumTrait where BigNumTrait: std::ops::Add + std::ops::Sub + std::ops::Mul + std::ops::Div + std::ops::Eq + RuntimeBigNumTrait {

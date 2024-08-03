@@ -4,13 +4,17 @@ use crate::runtime_bignum::BigNumInstance;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::utils::u60_representation::U60Repr;
 use crate::utils::arrayX::ArrayX;
+use crate::utils::mul::schoolbook_mult;
 
 struct U8192Params {}
 impl RuntimeBigNumParamsTrait<69> for U8192Params {
     fn modulus_bits() -> u32 {
         8193
     }
-    fn has_multiplicative_inverse() -> bool { false }
+    fn has_multiplicative_inverse() -> bool { false }    
+    fn mult(a: [Field; 69], b: [Field; 69]) -> ArrayX<Field, 69, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 impl BigNumParamsTrait<69> for U8192Params {
     fn get_instance() -> BigNumInstance<69, Self> {
@@ -20,6 +24,9 @@ impl BigNumParamsTrait<69> for U8192Params {
         8193
     }
     fn has_multiplicative_inverse() -> bool { false }
+    fn mult(a: [Field; 69], b: [Field; 69]) -> ArrayX<Field, 69, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 global U8192_Instance: BigNumInstance<69, U8192Params> = BigNumInstance {
         modulus: [

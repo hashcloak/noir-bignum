@@ -32,6 +32,8 @@ use crate::BigNum;
 use crate::runtime_bignum::BigNumInstance;
 use crate::runtime_bignum::BigNumParamsTrait as RuntimeBigNumParamsTrait;
 use crate::fields::bn254Fq::BNParams;
+use crate::utils::mul::schoolbook_mult;
+use crate::utils::arrayX::ArrayX;
 
 /**
  * @brief Parameter definitions for generic fields of varying bit lengths
@@ -44,11 +46,17 @@ impl RuntimeBigNumParamsTrait<5> for Params512 {
     fn modulus_bits() -> u32 {
         512
     }
+    fn mult(a: [Field; 5], b: [Field; 5]) -> ArrayX<Field, 5, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 struct Params768 {}
 impl RuntimeBigNumParamsTrait<7> for Params768 {
     fn modulus_bits() -> u32 {
         768
+    }
+    fn mult(a: [Field; 7], b: [Field; 7]) -> ArrayX<Field, 7, 2> {
+      schoolbook_mult(a, b)
     }
 }
 struct Params1024 {}
@@ -56,17 +64,26 @@ impl RuntimeBigNumParamsTrait<9> for Params1024 {
     fn modulus_bits() -> u32 {
         1024
     }
+    fn mult(a: [Field; 9], b: [Field; 9]) -> ArrayX<Field, 9, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 struct Params2048 {}
 impl RuntimeBigNumParamsTrait<18> for Params2048 {
     fn modulus_bits() -> u32 {
         2048
     }
+    fn mult(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2> {
+      schoolbook_mult(a, b)
+    }
 }
 struct Params4096 {}
 impl RuntimeBigNumParamsTrait<35> for Params4096 {
     fn modulus_bits() -> u32 {
         4096
+    }
+    fn mult(a: [Field; 35], b: [Field; 35]) -> ArrayX<Field, 35, 2> {
+      schoolbook_mult(a, b)
     }
 }
 
