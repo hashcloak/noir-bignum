@@ -39,7 +39,9 @@ fn subtract_arrays<N>(
     let mut res = ArrayX { segments: [[0; N], [0; N]] };
     for i in 0..2 {
         for j in 0..N {
-            res.segments[i][j] = a.segments[i][j] - b.segments[i][j] - c.segments[i][j];
+            let new_term =  a.segments[i][j] - b.segments[i][j] - c.segments[i][j]; 
+            // std::as_witness(new_term);
+            res.segments[i][j] = new_term;
         }
     }
     res
@@ -145,20 +147,264 @@ fn combine_res_karatsuba<N, M>(
 }
 
 /**
+  * @brief Combined function for Karatsuba multiplication, returns the result of the multiplication
+  *        by computing r0, r1, r2 and then combining them into the final result.
+  * @description: This function computes the values r0, r1, r2 for a and b, where:
+  *               r0 = a_lo * b_lo
+  *               r2 = a_hi * b_hi
+  *               r1 = (a_lo + a_hi) * (b_lo + b_hi) - r0 - r2
+  *               Then, it combines these values to produce the final result.
+  * @param a: input byte array, length N
+  * @param b: input byte array, length N
+  * @param odd: bool indicating whether N is odd
+  * 
+  * @return The result of the Karatsuba multiplication as an array.
+  **/
+// fn karatsuba_mult_combined<let N: u64, let M: u64>(
+//     a: [Field; N],
+//     b: [Field; N],
+//     odd: bool
+// ) -> ArrayX<Field, N, 2> {
+//     // Initialize lo/hi arrays
+//     let mut a_lo = [0; M];
+//     let mut a_hi = [0; M];
+//     let mut b_lo = [0; M];
+//     let mut b_hi = [0; M];
+
+//     let mut len_lo = M;
+//     if odd {
+//         len_lo -= 1;
+//     }
+//     for i in 0..len_lo {
+//         a_lo[i] = a[i];
+//         b_lo[i] = b[i];
+//     }
+//     for i in len_lo..N {
+//         a_hi[i-len_lo] = a[i];
+//         b_hi[i-len_lo] = b[i];
+//     }
+
+//     // Calculate r0, r1, r2
+//     let r0: ArrayX<Field, M, 2> = schoolbook_mult(a_lo, b_lo);
+//     let r2: ArrayX<Field, M, 2> = schoolbook_mult(a_hi, b_hi);
+
+//     // Directly add arrays
+//     let mut added_a = [0; M];
+//     let mut added_b = [0; M];
+//     for i in 0..M {
+//         added_a[i] = a_lo[i] + a_hi[i];
+//         added_b[i] = b_lo[i] + b_hi[i];
+//     }
+
+//     let mut r1: ArrayX<Field, M, 2> = schoolbook_mult(added_a, added_b);
+
+//     // Directly subtract arrays
+//     let mut res = ArrayX { segments: [[0; N], [0; N]] };
+//     for i in 0..2 {
+//         for j in 0..M {
+//             let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+//             res.segments[i][j] = new_term;
+//         }
+//     }
+
+//     // Combine r0, r1, r2 into the final result
+//     for i in 0..len_lo {
+//         res.add_assign(i, r0.get(i));
+//         res.add_assign(i + len_lo, r1.get(i));
+//         res.add_assign(i + len_lo + len_lo, r2.get(i));
+//     }
+
+//     res
+// }
+
+
+/**
   * @brief Karatsuba multiplication fixed for 9 limbs
   * @description This 1 level Karatsuba, the next level does schoolbook mult
   **/
 pub fn karatsuba_mult_9(a: [Field; 9], b: [Field; 9]) -> ArrayX<Field, 9, 2> {
-    let (r0, r1, r2): (ArrayX<Field, 5, 2>, ArrayX<Field, 5, 2>, ArrayX<Field, 5, 2>) = get_r012_karatsuba(a, b, true);
-    combine_res_karatsuba(r0, r1, r2, true)
+    // Initialize lo/hi arrays
+    let mut a_lo = [0; 5];
+    let mut a_hi = [0; 5];
+    let mut b_lo = [0; 5];
+    let mut b_hi = [0; 5];
+
+    let mut len_lo = 4;
+    for i in 0..len_lo {
+        a_lo[i] = a[i];
+        b_lo[i] = b[i];
+    }
+    for i in len_lo..9 {
+        a_hi[i-len_lo] = a[i];
+        b_hi[i-len_lo] = b[i];
+    }
+
+    // Calculate r0, r1, r2
+    // r0 = a_lo * b_lo
+    // r2 = a_hi * b_hi
+    // r1 = a_lo*b_hi + a_hi*b_lo
+    let r0: ArrayX<Field, 5, 2> = schoolbook_mult(a_lo, b_lo);
+    let r2: ArrayX<Field, 5, 2> = schoolbook_mult(a_hi, b_hi);
+
+    let mut added_a = [0; 5];
+    let mut added_b = [0; 5];
+    for i in 0..5 {
+        added_a[i] = a_lo[i] + a_hi[i];
+        added_b[i] = b_lo[i] + b_hi[i];
+    }
+
+    let mut r1: ArrayX<Field, 5, 2> = schoolbook_mult(added_a, added_b);
+
+    // r1 = (a_lo+a_hi)(b_lo+b_hi) - r0 - r2
+    //    = a_lo*b_lo + a_lo*b_hi + a_hi*b_lo + a_hi*b_hi - a_lo*b_lo - a_hi*b_hi
+    //    = a_lo*b_hi + a_hi*b_lo
+    for i in 0..2 {
+        for j in 0..5 {
+            let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+            r1.segments[i][j] = new_term;
+        }
+    }
+
+    let mut res = ArrayX { segments: [[0; 9], [0; 9]] };
+    
+
+    // Combine r0, r1, r2 into the final result
+    for i in 0..9 {
+        res.add_assign(i, r0.get(i));
+        res.add_assign(i + len_lo, r1.get(i));
+        res.add_assign(i + len_lo + len_lo, r2.get(i));
+    }
+
+    res
 }
 
-/**
-  * @brief Karatsuba multiplication fixed for 18 limbs
-  * @description This is 3 level Karatsuba, it performs in recursion:
-  *              Karatsuba-18 -> Karatsuba-9 -> Schoolbook
-  **/
+#[test]
+fn test_karatsuba_mult_9() {
+    let a: [Field;9] = [1,2,3,4,5,6,7,8,9]; 
+    let b: [Field;9] = [1,2,3,4,5,6,7,8,9]; 
+    let c_schoolbook = schoolbook_mult(a, b);
+    let c_karatsuba = karatsuba_mult_9(a, b);
+    
+    assert(c_schoolbook.get(0) == c_karatsuba.get(0));
+    assert(c_schoolbook.get(1) == c_karatsuba.get(1));
+    assert(c_schoolbook.get(2) == c_karatsuba.get(2));
+    assert(c_schoolbook.get(3) == c_karatsuba.get(3));
+    assert(c_schoolbook.get(4) == c_karatsuba.get(4));
+    assert(c_schoolbook.get(5) == c_karatsuba.get(5));
+    assert(c_schoolbook.get(6) == c_karatsuba.get(6));
+    assert(c_schoolbook.get(7) == c_karatsuba.get(7));
+    assert(c_schoolbook.get(8) == c_karatsuba.get(8));
+}
+
+#[test]
+fn test_karatsuba_mult_18() {
+    let a: [Field;18] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
+    let b: [Field;18] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
+    let c_schoolbook = schoolbook_mult(a, b);
+    let c_karatsuba = karatsuba_mult_18(a, b);
+    
+    assert(c_schoolbook.get(0) == c_karatsuba.get(0));
+    assert(c_schoolbook.get(1) == c_karatsuba.get(1));
+    assert(c_schoolbook.get(2) == c_karatsuba.get(2));
+    assert(c_schoolbook.get(3) == c_karatsuba.get(3));
+    assert(c_schoolbook.get(4) == c_karatsuba.get(4));
+    assert(c_schoolbook.get(5) == c_karatsuba.get(5));
+    assert(c_schoolbook.get(6) == c_karatsuba.get(6));
+    assert(c_schoolbook.get(7) == c_karatsuba.get(7));
+    assert(c_schoolbook.get(8) == c_karatsuba.get(8));
+    assert(c_schoolbook.get(9) == c_karatsuba.get(9));
+    assert(c_schoolbook.get(10) == c_karatsuba.get(10));
+    assert(c_schoolbook.get(11) == c_karatsuba.get(11));
+    assert(c_schoolbook.get(12) == c_karatsuba.get(12));
+    assert(c_schoolbook.get(13) == c_karatsuba.get(13));
+    assert(c_schoolbook.get(14) == c_karatsuba.get(14));
+    assert(c_schoolbook.get(15) == c_karatsuba.get(15));
+    assert(c_schoolbook.get(16) == c_karatsuba.get(16));
+    assert(c_schoolbook.get(17) == c_karatsuba.get(17));
+}
+
+#[test]
+fn test_karatsuba_mult_35() {
+    let a: [Field;35] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35]; 
+    let b: [Field; 35] = [
+        42, 17, 93, 58, 76, 5, 31, 88, 64, 12, 
+        49, 3, 21, 97, 54, 68, 29, 83, 91, 36, 
+        7, 84, 65, 15, 77, 23, 56, 92, 10, 38, 
+        45, 81, 20, 73, 67
+    ];
+    let c_schoolbook = schoolbook_mult(a, b);
+    let c_karatsuba = karatsuba_mult_35(a, b);
+    
+    assert(c_schoolbook.get(0) == c_karatsuba.get(0));
+    assert(c_schoolbook.get(1) == c_karatsuba.get(1));
+    assert(c_schoolbook.get(2) == c_karatsuba.get(2));
+    assert(c_schoolbook.get(3) == c_karatsuba.get(3));
+    assert(c_schoolbook.get(4) == c_karatsuba.get(4));
+    assert(c_schoolbook.get(5) == c_karatsuba.get(5));
+    assert(c_schoolbook.get(6) == c_karatsuba.get(6));
+    assert(c_schoolbook.get(7) == c_karatsuba.get(7));
+    assert(c_schoolbook.get(8) == c_karatsuba.get(8));
+    assert(c_schoolbook.get(9) == c_karatsuba.get(9));
+    assert(c_schoolbook.get(10) == c_karatsuba.get(10));
+    assert(c_schoolbook.get(11) == c_karatsuba.get(11));
+    assert(c_schoolbook.get(12) == c_karatsuba.get(12));
+    assert(c_schoolbook.get(13) == c_karatsuba.get(13));
+    assert(c_schoolbook.get(14) == c_karatsuba.get(14));
+    assert(c_schoolbook.get(15) == c_karatsuba.get(15));
+    assert(c_schoolbook.get(16) == c_karatsuba.get(16));
+    assert(c_schoolbook.get(17) == c_karatsuba.get(17));
+    assert(c_schoolbook.get(18) == c_karatsuba.get(18));
+    assert(c_schoolbook.get(19) == c_karatsuba.get(19));
+    assert(c_schoolbook.get(20) == c_karatsuba.get(20));
+    assert(c_schoolbook.get(21) == c_karatsuba.get(21));
+    assert(c_schoolbook.get(22) == c_karatsuba.get(22));
+    assert(c_schoolbook.get(23) == c_karatsuba.get(23));
+    assert(c_schoolbook.get(24) == c_karatsuba.get(24));
+    assert(c_schoolbook.get(25) == c_karatsuba.get(25));
+    assert(c_schoolbook.get(26) == c_karatsuba.get(26));
+    assert(c_schoolbook.get(27) == c_karatsuba.get(27));
+    assert(c_schoolbook.get(28) == c_karatsuba.get(28));
+    assert(c_schoolbook.get(29) == c_karatsuba.get(29));
+    assert(c_schoolbook.get(30) == c_karatsuba.get(30));
+    assert(c_schoolbook.get(31) == c_karatsuba.get(31));
+    assert(c_schoolbook.get(32) == c_karatsuba.get(32));
+    assert(c_schoolbook.get(33) == c_karatsuba.get(33));
+    assert(c_schoolbook.get(34) == c_karatsuba.get(34));
+}
+
+// /**
+//   * @brief Karatsuba multiplication fixed for 18 limbs
+//   * @description This is 3 level Karatsuba, it performs in recursion:
+//   *              Karatsuba-18 -> Karatsuba-9 -> Schoolbook
+//   **/
+// pub fn karatsuba_mult_18(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2> {
+//     let mut a_lo = [0; 9];
+//     let mut a_hi = [0; 9];
+//     let mut b_lo = [0; 9];
+//     let mut b_hi = [0; 9];
+
+//     let len_lo = 9;
+//     for i in 0..len_lo {
+//         a_lo[i] = a[i];
+//         b_lo[i] = b[i];
+//     }
+//     for i in len_lo..18 {
+//         a_hi[i-len_lo] = a[i];
+//         b_hi[i-len_lo] = b[i];
+//     }
+
+//     let r0: ArrayX<Field, 9, 2> = karatsuba_mult_9(a_lo, b_lo);
+//     let r2: ArrayX<Field, 9, 2> = karatsuba_mult_9(a_hi, b_hi);
+
+//     let added_a = add_arrays(a_lo, a_hi);
+//     let added_b = add_arrays(b_lo, b_hi);
+//     let mut r1: ArrayX<Field, 9, 2> = karatsuba_mult_9(added_a, added_b);
+//     r1 = subtract_arrays(r1, r0, r2);
+
+//     combine_res_karatsuba(r0, r1, r2, false)
+// }
 pub fn karatsuba_mult_18(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2> {
+    // Initialize lo/hi arrays
     let mut a_lo = [0; 9];
     let mut a_hi = [0; 9];
     let mut b_lo = [0; 9];
@@ -174,23 +420,77 @@ pub fn karatsuba_mult_18(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2>
         b_hi[i-len_lo] = b[i];
     }
 
+    // Calculate r0, r1, r2
     let r0: ArrayX<Field, 9, 2> = karatsuba_mult_9(a_lo, b_lo);
     let r2: ArrayX<Field, 9, 2> = karatsuba_mult_9(a_hi, b_hi);
 
-    let added_a = add_arrays(a_lo, a_hi);
-    let added_b = add_arrays(b_lo, b_hi);
-    let mut r1: ArrayX<Field, 9, 2> = karatsuba_mult_9(added_a, added_b);
-    r1 = subtract_arrays(r1, r0, r2);
+    // Directly add arrays
+    let mut added_a = [0; 9];
+    let mut added_b = [0; 9];
+    for i in 0..9 {
+        added_a[i] = a_lo[i] + a_hi[i];
+        added_b[i] = b_lo[i] + b_hi[i];
+    }
 
-    combine_res_karatsuba(r0, r1, r2, false)
+    let mut r1: ArrayX<Field, 9, 2> = karatsuba_mult_9(added_a, added_b);
+
+    // Directly subtract arrays
+    for i in 0..2 {
+        for j in 0..9 {
+            let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+            r1.segments[i][j] = new_term;
+        }
+    }
+    let mut res = ArrayX { segments: [[0; 18], [0; 18]] };
+
+    // Combine r0, r1, r2 into the final result
+    for i in 0..18 {
+        res.add_assign(i, r0.get(i));
+        res.add_assign(i + len_lo, r1.get(i));
+        res.add_assign(i + len_lo + len_lo, r2.get(i));
+    }
+
+    res
 }
 
-/**
-  * @brief Karatsuba multiplication fixed for 35 limbs
-  * @description This is 3 level Karatsuba, it performs in recursion:
-  *              Karatsuba-35 -> Karatsuba-18 -> Karatsuba-9 -> Schoolbook
-  **/
+
+// EXPERIMENT: mult, ACIR OP: 381687, Circuit Size: 540581
+
+// /**
+//   * @brief Karatsuba multiplication fixed for 35 limbs
+//   * @description This is 3 level Karatsuba, it performs in recursion:
+//   *              Karatsuba-35 -> Karatsuba-18 -> Karatsuba-9 -> Schoolbook
+//   **/
+// pub fn karatsuba_mult_35(a: [Field; 35], b: [Field; 35]) -> ArrayX<Field, 35, 2> {
+//     let mut a_lo = [0; 18];
+//     let mut a_hi = [0; 18];
+//     let mut b_lo = [0; 18];
+//     let mut b_hi = [0; 18];
+
+//     let len_lo = 17;
+//     for i in 0..len_lo {
+//         a_lo[i] = a[i];
+//         b_lo[i] = b[i];
+//     }
+//     for i in len_lo..35 {
+//         a_hi[i-len_lo] = a[i];
+//         b_hi[i-len_lo] = b[i];
+//     }
+
+//     let r0: ArrayX<Field, 18, 2> = karatsuba_mult_18(a_lo, b_lo);
+//     let r2: ArrayX<Field, 18, 2> = karatsuba_mult_18(a_hi, b_hi);
+
+//     let added_a = add_arrays(a_lo, a_hi);
+//     let added_b = add_arrays(b_lo, b_hi);
+//     let mut r1: ArrayX<Field, 18, 2> = karatsuba_mult_18(added_a, added_b);
+//     r1 = subtract_arrays(r1, r0, r2);
+
+//     combine_res_karatsuba(r0, r1, r2, false)
+// }
+
+// EXPERIMENT: mult, ACIR OP: 318627, Circuit Size: 364712
 pub fn karatsuba_mult_35(a: [Field; 35], b: [Field; 35]) -> ArrayX<Field, 35, 2> {
+    // Initialize lo/hi arrays
     let mut a_lo = [0; 18];
     let mut a_hi = [0; 18];
     let mut b_lo = [0; 18];
@@ -206,13 +506,32 @@ pub fn karatsuba_mult_35(a: [Field; 35], b: [Field; 35]) -> ArrayX<Field, 35, 2>
         b_hi[i-len_lo] = b[i];
     }
 
+    // Calculate r0, r1, r2
     let r0: ArrayX<Field, 18, 2> = karatsuba_mult_18(a_lo, b_lo);
     let r2: ArrayX<Field, 18, 2> = karatsuba_mult_18(a_hi, b_hi);
 
-    let added_a = add_arrays(a_lo, a_hi);
-    let added_b = add_arrays(b_lo, b_hi);
-    let mut r1: ArrayX<Field, 18, 2> = karatsuba_mult_18(added_a, added_b);
-    r1 = subtract_arrays(r1, r0, r2);
+    let mut added_a = [0; 18];
+    let mut added_b = [0; 18];
+    for i in 0..18 {
+        added_a[i] = a_lo[i] + a_hi[i];
+        added_b[i] = b_lo[i] + b_hi[i];
+    }
 
-    combine_res_karatsuba(r0, r1, r2, false)
+    let mut r1: ArrayX<Field, 18, 2> = karatsuba_mult_18(added_a, added_b);
+
+    for i in 0..2 {
+        for j in 0..18 {
+            let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+            r1.segments[i][j] = new_term;
+        }
+    }
+    let mut res = ArrayX { segments: [[0; 35], [0; 35]] };
+
+    for i in 0..35 {
+        res.add_assign(i, r0.get(i));
+        res.add_assign(i + len_lo, r1.get(i));
+        res.add_assign(i + len_lo + len_lo, r2.get(i));
+    }
+
+    res
 }
