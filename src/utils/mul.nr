@@ -261,6 +261,17 @@ pub fn karatsuba_mult_9(a: [Field; 9], b: [Field; 9]) -> ArrayX<Field, 9, 2> {
     for i in 0..2 {
         for j in 0..5 {
             let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+            // std::as_witness(new_term); 
+            // 34961 for U1024 with above line
+            // 34410 for U1024 WITHOUT above line <- optimal
+            
+            // this is an improvement for U2048?
+            // 100014 for U2048 with above line <- optimal
+            // 104264 for U2048 WITHOUT above line
+
+            // this is an improvement for U4096?
+            // 317238 for U4096 with above line
+            // 364712 for U4096 WITHOUT above line
             r1.segments[i][j] = new_term;
         }
     }
@@ -276,100 +287,6 @@ pub fn karatsuba_mult_9(a: [Field; 9], b: [Field; 9]) -> ArrayX<Field, 9, 2> {
     }
 
     res
-}
-
-#[test]
-fn test_karatsuba_mult_9() {
-    let a: [Field;9] = [1,2,3,4,5,6,7,8,9]; 
-    let b: [Field;9] = [1,2,3,4,5,6,7,8,9]; 
-    let c_schoolbook = schoolbook_mult(a, b);
-    let c_karatsuba = karatsuba_mult_9(a, b);
-    
-    assert(c_schoolbook.get(0) == c_karatsuba.get(0));
-    assert(c_schoolbook.get(1) == c_karatsuba.get(1));
-    assert(c_schoolbook.get(2) == c_karatsuba.get(2));
-    assert(c_schoolbook.get(3) == c_karatsuba.get(3));
-    assert(c_schoolbook.get(4) == c_karatsuba.get(4));
-    assert(c_schoolbook.get(5) == c_karatsuba.get(5));
-    assert(c_schoolbook.get(6) == c_karatsuba.get(6));
-    assert(c_schoolbook.get(7) == c_karatsuba.get(7));
-    assert(c_schoolbook.get(8) == c_karatsuba.get(8));
-}
-
-#[test]
-fn test_karatsuba_mult_18() {
-    let a: [Field;18] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
-    let b: [Field;18] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
-    let c_schoolbook = schoolbook_mult(a, b);
-    let c_karatsuba = karatsuba_mult_18(a, b);
-    
-    assert(c_schoolbook.get(0) == c_karatsuba.get(0));
-    assert(c_schoolbook.get(1) == c_karatsuba.get(1));
-    assert(c_schoolbook.get(2) == c_karatsuba.get(2));
-    assert(c_schoolbook.get(3) == c_karatsuba.get(3));
-    assert(c_schoolbook.get(4) == c_karatsuba.get(4));
-    assert(c_schoolbook.get(5) == c_karatsuba.get(5));
-    assert(c_schoolbook.get(6) == c_karatsuba.get(6));
-    assert(c_schoolbook.get(7) == c_karatsuba.get(7));
-    assert(c_schoolbook.get(8) == c_karatsuba.get(8));
-    assert(c_schoolbook.get(9) == c_karatsuba.get(9));
-    assert(c_schoolbook.get(10) == c_karatsuba.get(10));
-    assert(c_schoolbook.get(11) == c_karatsuba.get(11));
-    assert(c_schoolbook.get(12) == c_karatsuba.get(12));
-    assert(c_schoolbook.get(13) == c_karatsuba.get(13));
-    assert(c_schoolbook.get(14) == c_karatsuba.get(14));
-    assert(c_schoolbook.get(15) == c_karatsuba.get(15));
-    assert(c_schoolbook.get(16) == c_karatsuba.get(16));
-    assert(c_schoolbook.get(17) == c_karatsuba.get(17));
-}
-
-#[test]
-fn test_karatsuba_mult_35() {
-    let a: [Field;35] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35]; 
-    let b: [Field; 35] = [
-        42, 17, 93, 58, 76, 5, 31, 88, 64, 12, 
-        49, 3, 21, 97, 54, 68, 29, 83, 91, 36, 
-        7, 84, 65, 15, 77, 23, 56, 92, 10, 38, 
-        45, 81, 20, 73, 67
-    ];
-    let c_schoolbook = schoolbook_mult(a, b);
-    let c_karatsuba = karatsuba_mult_35(a, b);
-    
-    assert(c_schoolbook.get(0) == c_karatsuba.get(0));
-    assert(c_schoolbook.get(1) == c_karatsuba.get(1));
-    assert(c_schoolbook.get(2) == c_karatsuba.get(2));
-    assert(c_schoolbook.get(3) == c_karatsuba.get(3));
-    assert(c_schoolbook.get(4) == c_karatsuba.get(4));
-    assert(c_schoolbook.get(5) == c_karatsuba.get(5));
-    assert(c_schoolbook.get(6) == c_karatsuba.get(6));
-    assert(c_schoolbook.get(7) == c_karatsuba.get(7));
-    assert(c_schoolbook.get(8) == c_karatsuba.get(8));
-    assert(c_schoolbook.get(9) == c_karatsuba.get(9));
-    assert(c_schoolbook.get(10) == c_karatsuba.get(10));
-    assert(c_schoolbook.get(11) == c_karatsuba.get(11));
-    assert(c_schoolbook.get(12) == c_karatsuba.get(12));
-    assert(c_schoolbook.get(13) == c_karatsuba.get(13));
-    assert(c_schoolbook.get(14) == c_karatsuba.get(14));
-    assert(c_schoolbook.get(15) == c_karatsuba.get(15));
-    assert(c_schoolbook.get(16) == c_karatsuba.get(16));
-    assert(c_schoolbook.get(17) == c_karatsuba.get(17));
-    assert(c_schoolbook.get(18) == c_karatsuba.get(18));
-    assert(c_schoolbook.get(19) == c_karatsuba.get(19));
-    assert(c_schoolbook.get(20) == c_karatsuba.get(20));
-    assert(c_schoolbook.get(21) == c_karatsuba.get(21));
-    assert(c_schoolbook.get(22) == c_karatsuba.get(22));
-    assert(c_schoolbook.get(23) == c_karatsuba.get(23));
-    assert(c_schoolbook.get(24) == c_karatsuba.get(24));
-    assert(c_schoolbook.get(25) == c_karatsuba.get(25));
-    assert(c_schoolbook.get(26) == c_karatsuba.get(26));
-    assert(c_schoolbook.get(27) == c_karatsuba.get(27));
-    assert(c_schoolbook.get(28) == c_karatsuba.get(28));
-    assert(c_schoolbook.get(29) == c_karatsuba.get(29));
-    assert(c_schoolbook.get(30) == c_karatsuba.get(30));
-    assert(c_schoolbook.get(31) == c_karatsuba.get(31));
-    assert(c_schoolbook.get(32) == c_karatsuba.get(32));
-    assert(c_schoolbook.get(33) == c_karatsuba.get(33));
-    assert(c_schoolbook.get(34) == c_karatsuba.get(34));
 }
 
 // /**
@@ -437,7 +354,9 @@ pub fn karatsuba_mult_18(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2>
     // Directly subtract arrays
     for i in 0..2 {
         for j in 0..9 {
+          // No improvement in gatecount when using this value directly in next for loops
             let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+            // std::as_witness(new_term); // TODO benchmark for length 18 and 35
             r1.segments[i][j] = new_term;
         }
     }
@@ -445,6 +364,8 @@ pub fn karatsuba_mult_18(a: [Field; 18], b: [Field; 18]) -> ArrayX<Field, 18, 2>
 
     // Combine r0, r1, r2 into the final result
     for i in 0..18 {
+        // No improvement in gatecount replacing add_assign with direct assignment to segment element
+        // No improvement in gatecount replacing .get with direct assignment
         res.add_assign(i, r0.get(i));
         res.add_assign(i + len_lo, r1.get(i));
         res.add_assign(i + len_lo + len_lo, r2.get(i));
@@ -522,16 +443,64 @@ pub fn karatsuba_mult_35(a: [Field; 35], b: [Field; 35]) -> ArrayX<Field, 35, 2>
     for i in 0..2 {
         for j in 0..18 {
             let new_term = r1.segments[i][j] - r0.segments[i][j] - r2.segments[i][j];
+            // std::as_witness(new_term); // todo test whether this is an improvement
             r1.segments[i][j] = new_term;
         }
     }
     let mut res = ArrayX { segments: [[0; 35], [0; 35]] };
 
-    for i in 0..35 {
-        res.add_assign(i, r0.get(i));
-        res.add_assign(i + len_lo, r1.get(i));
-        res.add_assign(i + len_lo + len_lo, r2.get(i));
+    for i in 0..18 {
+        res.add_assign(i, r0.segments[0][i]);
+        res.add_assign(i + len_lo, r1.segments[0][i]);
+        res.add_assign(i + len_lo + len_lo, r2.segments[0][i]);
+    }
+
+    for i in 18..35 {
+        res.add_assign(i, r0.segments[1][i-18]);
+        res.add_assign(i + len_lo, r1.segments[1][i-18]);
+        res.add_assign(i + len_lo + len_lo, r2.segments[1][i-18]);
     }
 
     res
+}
+
+#[test]
+fn test_karatsuba_mult_9() {
+    let a: [Field;9] = [1,2,3,4,5,6,7,8,9]; 
+    let b: [Field;9] = [1,2,3,4,5,6,7,8,9]; 
+    let c_schoolbook = schoolbook_mult(a, b);
+    let c_karatsuba = karatsuba_mult_9(a, b);
+    
+    for i in 0..18 {
+        assert(c_schoolbook.get(i) == c_karatsuba.get(i));
+    }
+}
+
+#[test]
+fn test_karatsuba_mult_18() {
+    let a: [Field;18] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
+    let b: [Field;18] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
+    let c_schoolbook = schoolbook_mult(a, b);
+    let c_karatsuba = karatsuba_mult_18(a, b);
+    
+    for i in 0..36 {
+        assert(c_schoolbook.get(i) == c_karatsuba.get(i));
+    }
+}
+
+#[test]
+fn test_karatsuba_mult_35() {
+    let a: [Field;35] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35]; 
+    let b: [Field; 35] = [
+        42, 17, 93, 58, 76, 5, 31, 88, 64, 12, 
+        49, 3, 21, 97, 54, 68, 29, 83, 91, 36, 
+        7, 84, 65, 15, 77, 23, 56, 92, 10, 38, 
+        45, 81, 20, 73, 67
+    ];
+    let c_schoolbook = schoolbook_mult(a, b);
+    let c_karatsuba = karatsuba_mult_35(a, b);
+    
+    for i in 0..70 {
+        assert(c_schoolbook.get(i) == c_karatsuba.get(i));
+    }
 }
